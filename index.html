@@ -3,57 +3,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>قرعه‌کشی گیمینگ</title>
+<title>BLZ - Gaming Server</title>
 <style>
-  body { font-family: 'Poppins', sans-serif; background:#111; color:#fff; text-align:center; padding:50px;}
-  h1 { color:#ff8000; text-shadow:0 0 10px #ff8000;}
-  .counter { font-size:1.8em; margin:20px 0; color:#fff;}
-  input { padding:10px; margin:8px; border:2px solid #ff8000; background:#222; color:#fff; border-radius:8px;}
-  button { background:#ff8000; color:#000; border:none; padding:10px 20px; border-radius:10px; font-size:1em; cursor:pointer; transition:0.3s;}
-  button:hover { background:#ffa533; box-shadow:0 0 10px #ff8000;}
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Orbitron',sans-serif;}
+body{
+  background:#111;
+  overflow:hidden;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  color:#fff;
+}
+
+/* پس زمینه متحرک گیمینگ */
+body::before{
+  content:'';
+  position:fixed;
+  top:0;left:0;width:100%;height:100%;
+  background: linear-gradient(270deg,#ff8000,#00ff88,#ff00ff,#ff8000);
+  background-size:800% 800%;
+  animation:gradientBG 15s ease infinite;
+  z-index:-1;
+}
+@keyframes gradientBG{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+
+/* تیتر */
+h1{
+  font-size:3em;
+  color:#ff8000;
+  text-shadow:0 0 15px #ff8000,0 0 30px #ff8000;
+  margin-bottom:30px;
+  text-align:center;
+}
+
+/* Loader */
+.loader{
+  border: 8px solid #222;
+  border-top: 8px solid #ff8000;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  animation:spin 1s linear infinite;
+  margin:20px auto;
+  box-shadow:0 0 20px #ff8000,0 0 40px #ff8000 inset;
+}
+@keyframes spin{100%{transform:rotate(360deg);}}
+
+/* متن لودینگ */
+#loading-text{
+  margin-top:15px;
+  font-size:1.2em;
+  color:#fff;
+  text-shadow:0 0 10px #ff8000;
+  animation:blink 1.5s infinite;
+}
+@keyframes blink{0%,50%,100%{opacity:1;}25%,75%{opacity:0.4;}}
+
+/* سرورها */
+.servers{
+  display:flex;
+  gap:20px;
+  margin-top:20px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.server-btn{
+  padding:20px 30px;
+  background:rgba(255,128,0,0.85);
+  color:#000;
+  border:none;
+  border-radius:15px;
+  cursor:pointer;
+  font-size:1.2em;
+  transition:0.3s;
+  box-shadow:0 0 15px #ff8000,0 0 30px #ff8000 inset;
+}
+.server-btn:hover{
+  transform:scale(1.1);
+  background:#ffa533;
+  box-shadow:0 0 25px #ff8000,0 0 50px #ff8000 inset;
+}
+
+/* فیلد انتخاب پرتال */
+.portal-select{
+  margin-top:20px;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  gap:15px;
+}
+select{
+  padding:10px 15px;
+  border-radius:8px;
+  border:2px solid #ff8000;
+  background:#222;
+  color:#fff;
+  font-size:1em;
+}
+.connect-btn{
+  padding:10px 25px;
+  border:none;
+  border-radius:12px;
+  background:#ff8000;
+  color:#000;
+  cursor:pointer;
+  font-size:1em;
+  transition:0.3s;
+}
+.connect-btn:hover{
+  transform:scale(1.1);
+  background:#ffa533;
+}
+
+/* پیام ارور */
+.error-log{
+  margin-top:20px;
+  font-family:monospace;
+  color:#ff4c4c;
+  text-align:center;
+  text-shadow:0 0 10px #ff4c4c;
+  animation:flash 1s infinite;
+}
+@keyframes flash{
+  0%,100%{opacity:1;}
+  50%{opacity:0.4;}
+}
+
+/* مخفی کردن عناصر */
+.hidden{display:none;}
 </style>
 </head>
 <body>
 
-<h1>🎮 قرعه‌کشی گیمینگ</h1>
-<p class="counter">شرکت‌کنندگان: <span id="count">...</span> نفر</p>
+<h1>BLZ - Gaming Server</h1>
 
-<input type="text" id="name" placeholder="نام شما">
-<input type="text" id="telegram" placeholder="آیدی تلگرام یا شماره تلفن">
-<br>
-<button onclick="register()">ثبت‌نام در قرعه‌کشی</button>
+<div id="loading" class="loader"></div>
+<p id="loading-text">Connecting to servers...</p>
 
-<p id="msg"></p>
+<div id="server-list" class="servers hidden">
+  <button class="server-btn" data-server="1">Server 1</button>
+  <button class="server-btn" data-server="2">Server 2</button>
+  <button class="server-btn" data-server="3">Server 3</button>
+  <button class="server-btn" data-server="4">Server 4</button>
+  <button class="server-btn" data-server="5">Server 5</button>
+</div>
+
+<div id="portal-select" class="portal-select">
+  <label for="portal">Choose Portal:</label>
+  <select id="portal">
+    <option value="1">Portal 1</option>
+    <option value="2">Portal 2</option>
+  </select>
+  <button class="connect-btn" id="connect">Connect</button>
+</div>
+
+<div id="error-log" class="error-log"></div>
 
 <script>
-const api = "https://script.google.com/macros/s/AKfycbwp62CynlRJILFUG13lTbB0h328DT9qgluMWXJBOBBG9LsK65A_RReG3WLGO7Go9okj3A/exec";
+const loading = document.getElementById('loading');
+const loadingText = document.getElementById('loading-text');
+const serverList = document.getElementById('server-list');
+const portalSelect = document.getElementById('portal-select');
+const errorLog = document.getElementById('error-log');
+let currentServer = null;
 
-function getCount() {
-  fetch(api)
-    .then(r => r.text())
-    .then(t => document.getElementById('count').innerText = t);
+// انیمیشن لودینگ اولیه 5 ثانیه
+setTimeout(() => {
+  loading.classList.add('hidden');
+  loadingText.classList.add('hidden');
+  serverList.classList.remove('hidden');
+}, 5000);
+
+// دکمه‌های سرور
+document.querySelectorAll('.server-btn').forEach(btn => {
+  btn.addEventListener('click', ()=>{
+    currentServer = btn.dataset.server;
+    if(currentServer === "1" || currentServer === "2"){
+      portalSelect.style.display = 'flex';
+    } else {
+      portalSelect.style.display = 'none';
+      showError();
+    }
+  });
+});
+
+// اتصال پرتال
+document.getElementById('connect').addEventListener('click', ()=>{
+  const portal = document.getElementById('portal').value;
+  showError(portal);
+});
+
+// نمایش ارور و IP log با موشن
+function showError(portal){
+  const randomIP = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+  errorLog.innerHTML = `
+  [${new Date().toLocaleTimeString()}] ERROR: Failed to connect to Server ${currentServer} ${portal? '(Portal '+portal+')':''}<br>
+  [IP Log] ${randomIP}
+  `;
+  serverList.classList.add('hidden');
+  portalSelect.style.display = 'none';
+  loading.classList.remove('hidden');
+  loadingText.classList.remove('hidden');
+  loadingText.innerText = "Reconnecting...";
+  // لودینگ دوباره 4 ثانیه
+  setTimeout(()=>{
+    loading.classList.add('hidden');
+    loadingText.classList.add('hidden');
+    serverList.classList.remove('hidden');
+  }, 4000);
 }
-
-function register() {
-  const name = document.getElementById('name').value.trim();
-  const telegram = document.getElementById('telegram').value.trim();
-  if(!name || !telegram) return alert("لطفاً نام و آیدی خود را وارد کنید");
-
-  fetch(api, {
-    method:"POST",
-    body: JSON.stringify({name, telegram})
-  })
-  .then(r => r.text())
-  .then(res => {
-    document.getElementById('msg').innerText = "✅ ثبت‌نام با موفقیت انجام شد!";
-    getCount(); // شمارنده بلافاصله بروزرسانی شود
-    document.getElementById('name').value = "";
-    document.getElementById('telegram').value = "";
-  })
-  .catch(()=>alert("خطا در ارسال اطلاعات"));
-}
-
-window.onload = getCount; // هنگام باز کردن صفحه شمارنده نمایش داده شود
 </script>
 
 </body>
