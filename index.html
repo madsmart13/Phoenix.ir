@@ -1,503 +1,60 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="fa">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GameHelper — global price & gaming tools</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    :root{
-      --accent:#00baff; --accent2:#9b5cff; --card-bg:#071027;
-    }
-    body{background:linear-gradient(180deg,#020214 0%, #050517 70%); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
-    .glass{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter: blur(6px);}
-    .muted{color:#99a0b5}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قرعه‌کشی گیمینگ</title>
+<style>
+  body { font-family: 'Poppins', sans-serif; background:#111; color:#fff; text-align:center; padding:50px;}
+  h1 { color:#ff8000; text-shadow:0 0 10px #ff8000;}
+  .counter { font-size:1.8em; margin:20px 0; color:#fff;}
+  input { padding:10px; margin:8px; border:2px solid #ff8000; background:#222; color:#fff; border-radius:8px;}
+  button { background:#ff8000; color:#000; border:none; padding:10px 20px; border-radius:10px; font-size:1em; cursor:pointer; transition:0.3s;}
+  button:hover { background:#ffa533; box-shadow:0 0 10px #ff8000;}
+</style>
 </head>
-<body class="text-slate-100">
-  <div id="root"></div>
+<body>
 
-  <!-- React -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+<h1>🎮 قرعه‌کشی گیمینگ</h1>
+<p class="counter">شرکت‌کنندگان: <span id="count">...</span> نفر</p>
 
-  <script type="text/babel">
+<input type="text" id="name" placeholder="نام شما">
+<input type="text" id="telegram" placeholder="آیدی تلگرام یا شماره تلفن">
+<br>
+<button onclick="register()">ثبت‌نام در قرعه‌کشی</button>
 
-  const { useState, useEffect, useRef } = React;
+<p id="msg"></p>
 
-  /* =============================
-     Utilities
-     - robust fetch via public proxies (tries multiple)
-     - timeout helper
-     - local cache helper
-     ============================= */
+<script>
+const api = "https://script.google.com/macros/s/AKfycbwp62CynlRJILFUG13lTbB0h328DT9qgluMWXJBOBBG9LsK65A_RReG3WLGO7Go9okj3A/exec";
 
-  function timeout(ms){
-    return new Promise((_, rej) => setTimeout(()=>rej(new Error('timeout')), ms));
-  }
+function getCount() {
+  fetch(api)
+    .then(r => r.text())
+    .then(t => document.getElementById('count').innerText = t);
+}
 
-  async function tryFetch(url, {timeoutMs=8000} = {}){
-    // Try direct fetch first (works when target allows CORS).
-    try {
-      const r = await Promise.race([fetch(url), timeout(timeoutMs)]);
-      if (!r.ok) throw new Error('non-ok');
-      return r;
-    } catch(e){
-      // fallthrough to proxies
-    }
-    // Try public proxies in order
-    const proxies = [
-      'https://api.allorigins.win/raw?url=',
-      'https://api.allorigins.cf/raw?url=',
-      // You can add other proxies here if available
-    ];
-    for (let p of proxies){
-      try {
-        const prox = p + encodeURIComponent(url);
-        const r = await Promise.race([fetch(prox), timeout(timeoutMs)]);
-        if (!r.ok) throw new Error('proxy non-ok');
-        return r;
-      } catch(e){
-        // try next proxy
-      }
-    }
-    throw new Error('fetch failed (CORS/proxy/timeout)');
-  }
+function register() {
+  const name = document.getElementById('name').value.trim();
+  const telegram = document.getElementById('telegram').value.trim();
+  if(!name || !telegram) return alert("لطفاً نام و آیدی خود را وارد کنید");
 
-  function saveCache(key, data, ttlSec=300){
-    const payload = { ts: Date.now(), ttl: ttlSec*1000, data };
-    try { localStorage.setItem(key, JSON.stringify(payload)); } catch(e){}
-  }
-  function loadCache(key){
-    try {
-      const raw = localStorage.getItem(key);
-      if(!raw) return null;
-      const p = JSON.parse(raw);
-      if(Date.now() - p.ts > p.ttl) { localStorage.removeItem(key); return null; }
-      return p.data;
-    } catch(e){ return null; }
-  }
+  fetch(api, {
+    method:"POST",
+    body: JSON.stringify({name, telegram})
+  })
+  .then(r => r.text())
+  .then(res => {
+    document.getElementById('msg').innerText = "✅ ثبت‌نام با موفقیت انجام شد!";
+    getCount(); // شمارنده بلافاصله بروزرسانی شود
+    document.getElementById('name').value = "";
+    document.getElementById('telegram').value = "";
+  })
+  .catch(()=>alert("خطا در ارسال اطلاعات"));
+}
 
-  /* =============================
-     API helpers (client only)
-     - Steam store endpoints (via public proxy)
-     - store search
-     - exchangerate.host for USD -> IRR (CORS friendly)
-     - mock Iranian price source (replace later with real API)
-     ============================= */
+window.onload = getCount; // هنگام باز کردن صفحه شمارنده نمایش داده شود
+</script>
 
-  async function getSteamAppDetails(appid, cc='US'){
-    const url = `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=${cc}&l=en`;
-    const r = await tryFetch(url);
-    const txt = await r.text();
-    // API returns { "<appid>": { success: true, data: {...}} }
-    const j = JSON.parse(txt);
-    return j[appid] || { success:false };
-  }
-
-  async function storeSearch(term, cc='US', count=12){
-    // store search endpoint:
-    // https://store.steampowered.com/api/storesearch?term=term&cc=US
-    const q = encodeURIComponent(term);
-    const url = `https://store.steampowered.com/api/storesearch?term=${q}&cc=${cc}&l=en`;
-    const r = await tryFetch(url);
-    const j = await r.json();
-    // j.items can be list of results (structure sometimes varies)
-    return j;
-  }
-
-  async function getUsdToIrr(){
-    // exchangerate.host offers CORS-enabled convert
-    const cached = loadCache('rate_usd_irr');
-    if(cached) return cached;
-    try {
-      const r = await fetch('https://api.exchangerate.host/convert?from=USD&to=IRR');
-      const j = await r.json();
-      const val = j.result || 420000; // fallback
-      saveCache('rate_usd_irr', val, 600); // cache 10 min
-      return val;
-    } catch(e){
-      return 420000;
-    }
-  }
-
-  function mockIranianPrice(appid){
-    // Replace or call real Iranian API here when available.
-    const map = {
-      '1174180': 1590000,
-      '730': 279000,
-      '570': 189000,
-    };
-    return map[appid] || null;
-  }
-
-  /* =============================
-     UI: App
-     ============================= */
-
-  function App(){
-    const [lang, setLang] = useState('en');
-    const [query, setQuery] = useState('');
-    const [searching, setSearching] = useState(false);
-    const [results, setResults] = useState([]);
-    const [selected, setSelected] = useState(null); // detailed game object
-    const [regions, setRegions] = useState(['US','TR','AR','BR','RU']); // region list
-    const [regionPrices, setRegionPrices] = useState({});
-    const [usdToIrr, setUsdToIrr] = useState(null);
-    const [notes, setNotes] = useState([]);
-    const [deals, setDeals] = useState(null);
-
-    useEffect(()=>{
-      // load cached deals & rate
-      (async ()=>{
-        const r = await getUsdToIrr();
-        setUsdToIrr(r);
-        const cachedDeals = loadCache('steam_featured');
-        if(cachedDeals) setDeals(cachedDeals);
-        else loadDeals();
-      })();
-    },[]);
-
-    async function loadDeals(){
-      try {
-        const url = 'https://store.steampowered.com/api/featuredcategories/';
-        const r = await tryFetch(url);
-        const txt = await r.text();
-        const j = JSON.parse(txt);
-        const specials = j?.specials?.items || j?.topsellers?.items || [];
-        setDeals(specials.slice(0,12));
-        saveCache('steam_featured', specials.slice(0,12), 300);
-      } catch(e){
-        setDeals([]);
-        note('Failed to load deals (CORS / proxy). Showing cached or empty list.');
-      }
-    }
-
-    function note(msg){ setNotes(prev => [msg, ...prev].slice(0,6)); }
-
-    async function doSearch(){
-      if(!query) return;
-      setSearching(true);
-      setResults([]);
-      try {
-        // store search (by name)
-        const cacheKey = `search:${query}:US`;
-        const cached = loadCache(cacheKey);
-        if(cached){ setResults(cached); setSearching(false); return; }
-
-        const j = await storeSearch(query,'US');
-        // j.items or j.results depending on endpoint; normalize
-        let items = [];
-        if(Array.isArray(j.items)) items = j.items;
-        else if(Array.isArray(j.results)) items = j.results;
-        else if(j.total && Array.isArray(j.items)) items = j.items;
-        else items = j?.items || [];
-        // map to simple objects
-        const list = items.map(it => ({
-          id: it.appid || it.id || it,
-          name: it.name || it.title || it,
-          small_capsule_image: it.small_capsule_image || it.header_image || null,
-        }));
-        setResults(list);
-        saveCache(cacheKey, list, 300);
-      } catch(e){
-        note('Search failed — falling back to local results.');
-        setResults([]);
-      } finally { setSearching(false); }
-    }
-
-    async function loadDetails(appid){
-      setSelected(null);
-      setRegionPrices({});
-      // try cache first
-      const cacheKey = `appdetail:${appid}`;
-      const cached = loadCache(cacheKey);
-      if(cached){ setSelected(cached); loadRegionPricesCached(appid); return; }
-
-      try {
-        const main = await getSteamAppDetails(appid,'US');
-        if(!main.success){ note('Steam appdetails returned no data.'); }
-        const data = main.data || {};
-        // parse price if available
-        const price_overview = data.price_overview || null;
-        const usdPrice = price_overview ? (price_overview.final/100) : 0;
-        const detail = {
-          appid,
-          name: data.name || `App ${appid}`,
-          short_desc: data.short_description || '',
-          header_image: data.header_image || null,
-          usdPrice,
-        };
-        setSelected(detail);
-        saveCache(cacheKey, detail, 300);
-        // fetch region prices concurrently
-        loadRegionPrices(appid);
-      } catch(e){
-        note('Failed to fetch details (CORS/proxy). Showing fallback data.');
-        const fallback = { appid, name: `App ${appid} (fallback)`, short_desc: '', header_image:null, usdPrice: 0 };
-        setSelected(fallback);
-      }
-    }
-
-    async function loadRegionPrices(appid){
-      const regMap = {};
-      const promises = regions.map(async cc => {
-        try{
-          const j = await getSteamAppDetails(appid, cc);
-          if(j.success && j.data && j.data.price_overview){
-            const po = j.data.price_overview;
-            const val = po.final/100;
-            regMap[cc] = { price: val, currency: po.currency || '' };
-          } else {
-            regMap[cc] = null;
-          }
-        }catch(e){ regMap[cc] = null; }
-      });
-      await Promise.all(promises);
-      setRegionPrices(regMap);
-      saveCache(`regionPrices:${appid}`, regMap, 300);
-    }
-
-    function loadRegionPricesCached(appid){
-      const cached = loadCache(`regionPrices:${appid}`);
-      if(cached) setRegionPrices(cached);
-      else loadRegionPrices(appid);
-    }
-
-    return (
-      <div className="min-h-screen p-6">
-        <header className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent2)] flex items-center justify-center text-black font-extrabold text-lg">GH</div>
-            <div>
-              <h1 className="text-2xl font-bold">GameHelper</h1>
-              <div className="text-sm muted">Global prices & free gaming tools</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="muted text-sm">USD → IRR: {usdToIrr? (usdToIrr.toLocaleString() + ' IRR') : '—'}</div>
-            <button onClick={()=>{ setLang(l=> l==='en' ? 'fa' : 'en'); }} className="px-3 py-2 rounded border">Switch</button>
-          </div>
-        </header>
-
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <section className="lg:col-span-2 glass p-5 rounded-lg">
-            <div className="flex gap-3 mb-4">
-              <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search game by name or paste AppID (e.g., 1174180)" className="flex-1 p-3 bg-[#07122a] rounded outline-none" />
-              <button onClick={doSearch} className="px-4 py-2 rounded bg-[var(--accent)] text-black font-semibold">{searching?'Searching...':'Search'}</button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-              <div className="col-span-1 md:col-span-3">
-                {results.length===0 && <div className="p-4 muted">No search results yet. Try typing a game name (e.g., "GTA V") or enter AppID.</div>}
-                <div className="space-y-2">
-                  {results.map(r => (
-                    <div key={r.id} className="p-2 rounded bg-[#07112a] flex items-center gap-3 cursor-pointer hover:bg-[#0b1a35]" onClick={()=>{ loadDetails(String(r.id)); }}>
-                      {r.small_capsule_image && <img src={r.small_capsule_image} alt="" className="w-24 h-8 object-cover rounded" />}
-                      <div className="flex-1">
-                        <div className="font-semibold">{r.name}</div>
-                        <div className="text-xs muted">AppID: {r.id}</div>
-                      </div>
-                      <div className="text-sm muted">Details</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <aside className="p-3 bg-[#07122a] rounded">
-                <h4 className="font-semibold mb-2">Featured deals</h4>
-                {deals===null && <div className="muted">Loading deals...</div>}
-                {deals && deals.length===0 && <div className="muted text-sm">No deals available (CORS/proxy may limit remote fetch).</div>}
-                {deals && deals.map(d => (
-                  <div key={d.appid || d.id || d.name} className="flex gap-2 items-center mb-2">
-                    {d.small_capsule_image && <img src={d.small_capsule_image} alt="" className="w-20 h-8 object-cover rounded" />}
-                    <div className="flex-1 text-sm">{d.name}</div>
-                    <div className="text-green-300 font-semibold">{d.discount_percent? `-${d.discount_percent}%` : ''}</div>
-                  </div>
-                ))}
-              </aside>
-            </div>
-
-            {/* Selected details */}
-            <div>
-              {!selected && <div className="p-4 muted">Select a game from search results to see prices, region comparison, and tools.</div>}
-
-              {selected && (
-                <div className="p-4 bg-[#041026] rounded">
-                  <div className="flex gap-4">
-                    {selected.header_image && <img src={selected.header_image} alt="" className="w-48 rounded" />}
-                    <div className="flex-1">
-                      <h2 className="text-2xl font-bold">{selected.name}</h2>
-                      <p className="muted text-sm">{selected.short_desc}</p>
-                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="p-3 bg-[#06142b] rounded">
-                          <div className="muted text-sm">Price (USD)</div>
-                          <div className="text-xl font-bold text-green-300">${selected.usdPrice.toFixed(2)}</div>
-                        </div>
-                        <div className="p-3 bg-[#06142b] rounded">
-                          <div className="muted text-sm">Local price (Toman)</div>
-                          <div className="text-xl font-bold text-yellow-300">
-                            { (function(){
-                              const iran = mockIranianPrice(selected.appid);
-                              if(iran) return iran.toLocaleString() + ' IRR ≈ ' + Math.round(iran/10).toLocaleString() + ' Toman';
-                              if(usdToIrr) return Math.round((usdToIrr * selected.usdPrice)/10).toLocaleString() + ' Toman (converted)';
-                              return 'N/A';
-                            })() }
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <h4 className="font-semibold mb-2">Region comparison</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                          {regions.map(cc => {
-                            const r = regionPrices[cc];
-                            return (
-                              <div key={cc} className="p-3 bg-[#081430] rounded flex items-center justify-between">
-                                <div className="font-medium">{cc}</div>
-                                <div className="muted">{ r ? (r.price + ' ' + (r.currency || '')) : '—' }</div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="mt-4 text-sm muted">
-                        <div>USD source: Steam Store API (via proxy when required)</div>
-                        <div>Local price: mock Iranian sources (replace with real API to show actual Iranian vendor prices)</div>
-                      </div>
-
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-          </section>
-
-          <aside className="space-y-4">
-            <div className="glass p-4 rounded">
-              <h3 className="font-semibold mb-2">FPS Calculator</h3>
-              <FpsWidget />
-            </div>
-
-            <div className="glass p-4 rounded">
-              <h3 className="font-semibold mb-2">Sensitivity Converter</h3>
-              <SensWidget />
-            </div>
-
-            <div className="glass p-4 rounded">
-              <h3 className="font-semibold mb-2">Quick Actions</h3>
-              <div className="flex flex-col gap-2">
-                <button className="px-3 py-2 rounded bg-[var(--accent)] text-black" onClick={()=>{
-                  if(selected) navigator.clipboard?.writeText(window.location.href + '#'+selected.appid).then(()=>alert('Link copied'));
-                  else alert('Select a game first');
-                }}>Copy page link</button>
-                <button className="px-3 py-2 rounded border" onClick={()=>{
-                  // try to open steam store page in new tab (without CORS)
-                  if(selected) window.open(`https://store.steampowered.com/app/${selected.appid}/`, '_blank');
-                  else alert('Select a game first');
-                }}>Open Steam page</button>
-              </div>
-            </div>
-
-            <div className="glass p-4 rounded">
-              <h3 className="font-semibold mb-2">Status / Notes</h3>
-              <div className="text-sm muted">
-                {notes.length===0 && <div>No notes (ok)</div>}
-                {notes.map((n,i)=>(<div key={i} className="text-xs">• {n}</div>))}
-              </div>
-            </div>
-          </aside>
-        </main>
-
-        <footer className="mt-8 muted text-center text-sm">GameHelper — Demo client-only app. For production add a backend proxy, caching layer and real local vendor APIs.</footer>
-      </div>
-    );
-  }
-
-  /* =============================
-     Widgets
-     ============================= */
-
-  function FpsWidget(){
-    const [gpu, setGpu] = useState(8000);
-    const [cpu, setCpu] = useState(6000);
-    const [res, setRes] = useState('1080');
-    const [preset, setPreset] = useState('medium');
-    const est = Math.round((gpu*0.0008 + cpu*0.0003) * (res==='1080'?1:res==='1440'?0.7:0.5) * (preset==='high'?0.7: preset==='medium'?1:1.2));
-    return (
-      <div>
-        <div className="text-xs muted mb-2">Estimate relative FPS (toy model)</div>
-        <div className="grid grid-cols-1 gap-2">
-          <div>
-            <label className="text-xs muted">GPU score</label>
-            <input type="range" min="1000" max="30000" value={gpu} onChange={e=>setGpu(+e.target.value)} />
-            <div className="text-sm">{gpu}</div>
-          </div>
-          <div>
-            <label className="text-xs muted">CPU score</label>
-            <input type="range" min="1000" max="20000" value={cpu} onChange={e=>setCpu(+e.target.value)} />
-            <div className="text-sm">{cpu}</div>
-          </div>
-          <div>
-            <label className="text-xs muted">Resolution</label>
-            <select value={res} onChange={e=>setRes(e.target.value)} className="w-full p-2 bg-[#07122a] rounded">
-              <option value="1080">1920×1080</option>
-              <option value="1440">2560×1440</option>
-              <option value="2160">3840×2160</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs muted">Preset</label>
-            <select value={preset} onChange={e=>setPreset(e.target.value)} className="w-full p-2 bg-[#07122a] rounded">
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-        </div>
-        <div className="mt-3 font-semibold">Estimated FPS: <span className="text-yellow-300">{est}</span></div>
-      </div>
-    );
-  }
-
-  function SensWidget(){
-    const [dpi, setDpi] = useState(800);
-    const [sens, setSens] = useState(1.0);
-    const [fromGame, setFromGame] = useState('CS2');
-    const [toGame, setToGame] = useState('Valorant');
-    function convert(){
-      const map = { 'CS2->Valorant':0.45, 'Valorant->CS2':2.22, 'CS2->Dota2':1.0 };
-      const key = `${fromGame}->${toGame}`;
-      const m = map[key] || 1.0;
-      return (sens * m).toFixed(4);
-    }
-    return (
-      <div className="grid grid-cols-1 gap-2">
-        <div><label className="text-xs muted">DPI</label><input className="w-full p-2 bg-[#07122a] rounded" type="number" value={dpi} onChange={e=>setDpi(+e.target.value)} /></div>
-        <div><label className="text-xs muted">Sensitivity ({fromGame})</label><input className="w-full p-2 bg-[#07122a] rounded" type="number" step="0.01" value={sens} onChange={e=>setSens(+e.target.value)} /></div>
-        <div className="flex gap-2">
-          <select value={fromGame} onChange={e=>setFromGame(e.target.value)} className="w-1/2 p-2 bg-[#07122a] rounded">
-            <option>CS2</option><option>Valorant</option><option>Dota2</option>
-          </select>
-          <select value={toGame} onChange={e=>setToGame(e.target.value)} className="w-1/2 p-2 bg-[#07122a] rounded">
-            <option>Valorant</option><option>CS2</option><option>Dota2</option>
-          </select>
-        </div>
-        <div className="font-semibold">Converted sensitivity ({toGame}): <span className="text-yellow-300">{convert()}</span></div>
-      </div>
-    );
-  }
-
-  /* =============================
-     Mount
-     ============================= */
-
-  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-
-  </script>
 </body>
 </html>
