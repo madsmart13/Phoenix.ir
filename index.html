@@ -1,226 +1,122 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BLZ - Gaming Server</title>
+<title>                      BLZ   </title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
-
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Orbitron',sans-serif;}
-body{
-  background:#111;
-  overflow:hidden;
-  height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  color:#fff;
-}
-
-/* پس زمینه متحرک گیمینگ */
-body::before{
-  content:'';
-  position:fixed;
-  top:0;left:0;width:100%;height:100%;
-  background: linear-gradient(270deg,#ff8000,#00ff88,#ff00ff,#ff8000);
-  background-size:800% 800%;
-  animation:gradientBG 15s ease infinite;
-  z-index:-1;
-}
-@keyframes gradientBG{
-  0%{background-position:0% 50%;}
-  50%{background-position:100% 50%;}
-  100%{background-position:0% 50%;}
-}
-
-/* تیتر */
-h1{
-  font-size:3em;
-  color:#ff8000;
-  text-shadow:0 0 15px #ff8000,0 0 30px #ff8000;
-  margin-bottom:30px;
-  text-align:center;
-}
-
-/* Loader */
-.loader{
-  border: 8px solid #222;
-  border-top: 8px solid #ff8000;
-  border-radius: 50%;
-  width: 80px;
-  height: 80px;
-  animation:spin 1s linear infinite;
-  margin:20px auto;
-  box-shadow:0 0 20px #ff8000,0 0 40px #ff8000 inset;
-}
+body{overflow:hidden;height:100vh;background:#0b0b0b;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;}
+canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-2;}
+header{width:100%;padding:20px 0;text-align:center;background:linear-gradient(90deg,#ff8000,#00ff88,#ff00ff);color:#fff;font-size:2.5em;text-shadow:0 0 20px #ff8000;}
+#loader-container{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:50px;}
+.loader{border:12px solid #222;border-top:12px solid #ff8000;border-radius:50%;width:120px;height:120px;animation:spin 1s linear infinite;box-shadow:0 0 40px #ff8000,0 0 60px #ff8000 inset;}
 @keyframes spin{100%{transform:rotate(360deg);}}
-
-/* متن لودینگ */
-#loading-text{
-  margin-top:15px;
-  font-size:1.2em;
-  color:#fff;
-  text-shadow:0 0 10px #ff8000;
-  animation:blink 1.5s infinite;
-}
-@keyframes blink{0%,50%,100%{opacity:1;}25%,75%{opacity:0.4;}}
-
-/* سرورها */
-.servers{
-  display:flex;
-  gap:20px;
-  margin-top:20px;
-  flex-wrap:wrap;
-  justify-content:center;
-}
-.server-btn{
-  padding:20px 30px;
-  background:rgba(255,128,0,0.85);
-  color:#000;
-  border:none;
-  border-radius:15px;
-  cursor:pointer;
-  font-size:1.2em;
-  transition:0.3s;
-  box-shadow:0 0 15px #ff8000,0 0 30px #ff8000 inset;
-}
-.server-btn:hover{
-  transform:scale(1.1);
-  background:#ffa533;
-  box-shadow:0 0 25px #ff8000,0 0 50px #ff8000 inset;
-}
-
-/* فیلد انتخاب پرتال */
-.portal-select{
-  margin-top:20px;
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  gap:15px;
-}
-select{
-  padding:10px 15px;
-  border-radius:8px;
-  border:2px solid #ff8000;
-  background:#222;
-  color:#fff;
-  font-size:1em;
-}
-.connect-btn{
-  padding:10px 25px;
-  border:none;
-  border-radius:12px;
-  background:#ff8000;
-  color:#000;
-  cursor:pointer;
-  font-size:1em;
-  transition:0.3s;
-}
-.connect-btn:hover{
-  transform:scale(1.1);
-  background:#ffa533;
-}
-
-/* پیام ارور */
-.error-log{
-  margin-top:20px;
-  font-family:monospace;
-  color:#ff4c4c;
-  text-align:center;
-  text-shadow:0 0 10px #ff4c4c;
-  animation:flash 1s infinite;
-}
-@keyframes flash{
-  0%,100%{opacity:1;}
-  50%{opacity:0.4;}
-}
-
-/* مخفی کردن عناصر */
+#loading-text{margin-top:20px;font-size:1.5em;color:#ff8000;text-shadow:0 0 20px #ff8000;animation:blink 1.5s infinite;}
+@keyframes blink{0%,50%,100%{opacity:1;}25%,75%{opacity:0.3;}}
+#server-list{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;margin-top:50px;width:90%;}
+.server-card{width:220px;background:rgba(255,128,0,0.85);border-radius:15px;padding:18px;text-align:center;cursor:pointer;box-shadow:0 0 25px #ff8000,0 0 50px #ff8000 inset;transition:0.3s transform,0.3s box-shadow;position:relative;overflow:hidden;}
+.server-card:hover{transform:scale(1.08) rotateZ(1deg);box-shadow:0 0 50px #ff8000,0 0 80px #ff8000 inset;}
+.server-card::before{content:'';position:absolute;top:0;left:-75%;width:50%;height:100%;background:rgba(255,255,255,0.2);transform:skewX(-20deg);transition:0.5s;}
+.server-card:hover::before{left:125%;}
+.server-title{font-size:1.3em;font-weight:bold;margin-bottom:12px;}
+.server-status{margin-bottom:12px;}
+.connect-btn{padding:10px 24px;border:none;border-radius:12px;background:#ff8000;color:#000;cursor:pointer;transition:0.3s;font-weight:700;}
+.connect-btn:hover{background:#ffa533;transform:scale(1.1);}
+.portal-select{margin-top:12px;display:flex;flex-direction:column;gap:10px;align-items:center;}
+select{padding:10px 14px;border-radius:8px;border:2px solid #ff8000;background:#222;color:#fff;cursor:pointer;}
+#error-log{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(255,0,0,0.85);padding:18px 25px;border-radius:12px;font-family:monospace;text-align:center;text-shadow:0 0 15px #ff4c4c;font-size:1.1em;animation:flash 1s infinite;z-index:999;}
+@keyframes flash{0%,100%{opacity:1;}50%{opacity:0.3;}}
 .hidden{display:none;}
 </style>
 </head>
 <body>
-
-<h1>BLZ - Gaming Server</h1>
-
-<div id="loading" class="loader"></div>
-<p id="loading-text">Connecting to servers...</p>
-
-<div id="server-list" class="servers hidden">
-  <button class="server-btn" data-server="1">Server 1</button>
-  <button class="server-btn" data-server="2">Server 2</button>
-  <button class="server-btn" data-server="3">Server 3</button>
-  <button class="server-btn" data-server="4">Server 4</button>
-  <button class="server-btn" data-server="5">Server 5</button>
+<canvas id="bg"></canvas>
+<header>BLZ - Gaming Connection Hub</header>
+<div id="loader-container">
+  <div id="loading" class="loader"></div>
+  <p id="loading-text">Connecting to servers...</p>
 </div>
-
-<div id="portal-select" class="portal-select">
-  <label for="portal">Choose Portal:</label>
-  <select id="portal">
-    <option value="1">Portal 1</option>
-    <option value="2">Portal 2</option>
-  </select>
-  <button class="connect-btn" id="connect">Connect</button>
+<div id="server-list" class="hidden">
+  <div class="server-card" data-server="1">
+    <div class="server-title">Server 1</div>
+    <div class="server-status">Status: Online</div>
+    <div class="portal-select hidden">
+      <select><option value="1">Portal 1</option><option value="2">Portal 2</option></select>
+      <button class="connect-btn">Connect</button>
+    </div>
+    <button class="connect-btn">Connect</button>
+  </div>
+  <div class="server-card" data-server="2">
+    <div class="server-title">Server 2</div>
+    <div class="server-status">Status: Online</div>
+    <div class="portal-select hidden">
+      <select><option value="1">Portal 1</option><option value="2">Portal 2</option></select>
+      <button class="connect-btn">Connect</button>
+    </div>
+    <button class="connect-btn">Connect</button>
+  </div>
+  <div class="server-card" data-server="3">
+    <div class="server-title">Server 3</div>
+    <div class="server-status">Status: Online</div>
+    <button class="connect-btn">Connect</button>
+  </div>
+  <div class="server-card" data-server="4">
+    <div class="server-title">Server 4</div>
+    <div class="server-status">Status: Online</div>
+    <button class="connect-btn">Connect</button>
+  </div>
+  <div class="server-card" data-server="5">
+    <div class="server-title">Server 5</div>
+    <div class="server-status">Status: Online</div>
+    <button class="connect-btn">Connect</button>
+  </div>
 </div>
-
-<div id="error-log" class="error-log"></div>
-
+<div id="error-log" class="hidden"></div>
 <script>
-const loading = document.getElementById('loading');
-const loadingText = document.getElementById('loading-text');
-const serverList = document.getElementById('server-list');
-const portalSelect = document.getElementById('portal-select');
-const errorLog = document.getElementById('error-log');
-let currentServer = null;
+// Particle background
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+let particlesArray=[];
+const colors=['#ff8000','#00ff88','#ff00ff','#00ffff','#ffa500'];
+class Particle{
+  constructor(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.size=Math.random()*3+1;this.speedX=(Math.random()-0.5)*2;this.speedY=(Math.random()-0.5)*2;this.color=colors[Math.floor(Math.random()*colors.length)];}
+  update(){this.x+=this.speedX;this.y+=this.speedY;if(this.x>canvas.width||this.x<0)this.speedX*=-1;if(this.y>canvas.height||this.y<0)this.speedY*=-1;}
+  draw(){ctx.fillStyle=this.color;ctx.shadowColor=this.color;ctx.shadowBlur=15;ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fill();}
+}
+function initParticles(){particlesArray=[];for(let i=0;i<150;i++)particlesArray.push(new Particle());}
+function animateParticles(){ctx.clearRect(0,0,canvas.width,canvas.height);particlesArray.forEach(p=>{p.update();p.draw();});requestAnimationFrame(animateParticles);}
+initParticles(); animateParticles();
+window.addEventListener('resize',()=>{canvas.width=window.innerWidth; canvas.height=window.innerHeight; initParticles();});
 
-// انیمیشن لودینگ اولیه 5 ثانیه
-setTimeout(() => {
-  loading.classList.add('hidden');
-  loadingText.classList.add('hidden');
-  serverList.classList.remove('hidden');
-}, 5000);
+const loadingContainer=document.getElementById('loader-container');
+const serverList=document.getElementById('server-list');
+const errorLog=document.getElementById('error-log');
+setTimeout(()=>{loadingContainer.classList.add('hidden'); serverList.classList.remove('hidden');},5000);
 
-// دکمه‌های سرور
-document.querySelectorAll('.server-btn').forEach(btn => {
-  btn.addEventListener('click', ()=>{
-    currentServer = btn.dataset.server;
-    if(currentServer === "1" || currentServer === "2"){
-      portalSelect.style.display = 'flex';
-    } else {
-      portalSelect.style.display = 'none';
-      showError();
-    }
+document.querySelectorAll('.server-card').forEach(card=>{
+  const connectBtn=card.querySelector('.connect-btn');
+  const portalSelect=card.querySelector('.portal-select');
+  connectBtn.addEventListener('click',()=>{
+    const server=card.dataset.server;
+    if(server==='1'||server==='2'){portalSelect?.classList.remove('hidden');}else triggerError(server);
+  });
+  portalSelect?.querySelector('.connect-btn')?.addEventListener('click',()=>{
+    const portal=portalSelect.querySelector('select').value;
+    triggerError(card.dataset.server,portal);
   });
 });
 
-// اتصال پرتال
-document.getElementById('connect').addEventListener('click', ()=>{
-  const portal = document.getElementById('portal').value;
-  showError(portal);
-});
-
-// نمایش ارور و IP log با موشن
-function showError(portal){
-  const randomIP = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
-  errorLog.innerHTML = `
-  [${new Date().toLocaleTimeString()}] ERROR: Failed to connect to Server ${currentServer} ${portal? '(Portal '+portal+')':''}<br>
-  [IP Log] ${randomIP}
-  `;
+function triggerError(server,portal){
+  const randomIP=`${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+  errorLog.innerHTML=`[${new Date().toLocaleTimeString()}] <b style='color:#ff4c4c'>ERROR:</b> اتصال به سرور ${server}${portal? ' (Portal '+portal+')':''} ناموفق بود<br>[IP Log] ${randomIP}`;
+  errorLog.classList.remove('hidden');
   serverList.classList.add('hidden');
-  portalSelect.style.display = 'none';
-  loading.classList.remove('hidden');
-  loadingText.classList.remove('hidden');
-  loadingText.innerText = "Reconnecting...";
-  // لودینگ دوباره 4 ثانیه
-  setTimeout(()=>{
-    loading.classList.add('hidden');
-    loadingText.classList.add('hidden');
-    serverList.classList.remove('hidden');
-  }, 4000);
+  setTimeout(()=>{serverList.classList.remove('hidden'); errorLog.classList.add('hidden');},4000);
 }
 </script>
-
 </body>
 </html>
